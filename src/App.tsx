@@ -1,10 +1,31 @@
-import { useState } from 'react'
+// App.tsx
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import liff from '@line/liff'
 
 function App() {
   const [count, setCount] = useState(0)
+  const [liffInitialized, setLiffInitialized] = useState(false)
+
+  useEffect(() => {
+    const initLiff = async () => {
+      try {
+        // อ่าน LIFF ID จาก environment variable
+        const liffId = import.meta.env.VITE_LIFF_ID
+        if (!liffId) {
+          throw new Error('VITE_LIFF_ID is not defined in .env file')
+        }
+        await liff.init({ liffId })
+        setLiffInitialized(true)
+        console.log('LIFF initialized successfully')
+      } catch (error) {
+        console.error('Error initializing LIFF:', error)
+      }
+    }
+    initLiff()
+  }, [])
 
   return (
     <>
@@ -16,17 +37,15 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1>Vite + React + LIFF</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
+        <button onClick={() => setCount((prev) => prev + 1)}>
           count is {count}
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+        <p>Edit <code>src/App.tsx</code> and save to test HMR</p>
       </div>
       <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+        {liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}
       </p>
     </>
   )
