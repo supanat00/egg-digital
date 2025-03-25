@@ -1,18 +1,16 @@
 // App.tsx
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
 import liff from '@line/liff'
+import MindAR from './MindAR'
 
 function App() {
-  const [count, setCount] = useState(0)
   const [liffInitialized, setLiffInitialized] = useState(false)
+  const [showAR, setShowAR] = useState(false)
 
   useEffect(() => {
     const initLiff = async () => {
       try {
-        // อ่าน LIFF ID จาก environment variable
+        // อ่าน LIFF ID จาก environment variable (.env) โดยใช้ prefix VITE_
         const liffId = import.meta.env.VITE_LIFF_ID
         if (!liffId) {
           throw new Error('VITE_LIFF_ID is not defined in .env file')
@@ -27,27 +25,17 @@ function App() {
     initLiff()
   }, [])
 
+  const handleStart = () => {
+    setShowAR(true)
+  }
+
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React + LIFF</h1>
-      <div className="card">
-        <button onClick={() => setCount((prev) => prev + 1)}>
-          count is {count}
-        </button>
-        <p>Edit <code>src/App.tsx</code> and save to test HMR</p>
-      </div>
-      <p className="read-the-docs">
-        {liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}
-      </p>
-    </>
+    <div>
+      <h1>My LIFF & MindAR App</h1>
+      <button onClick={handleStart}>Start</button>
+      {showAR && <MindAR />}
+      <p>{liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}</p>
+    </div>
   )
 }
 

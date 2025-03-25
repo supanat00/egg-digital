@@ -11,13 +11,19 @@
   },
   "dependencies": {
     "@line/liff": "^2.25.1",
+    "@types/aframe": "^1.2.8",
+    "aframe": "^1.7.0",
+    "aframe-react": "^4.4.0",
+    "mind-ar": "^1.2.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "three": "^0.174.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/three": "^0.174.0",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitejs/plugin-react-swc": "^3.8.0",
     "eslint": "^9.21.0",

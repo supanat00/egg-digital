@@ -5,6 +5,21 @@
   "hints": {
     "disown-opener": "off",
     "typescript-config/consistent-casing": "off",
-    "typescript-config/strict": "off"
+    "typescript-config/strict": "off",
+    "no-inline-styles": "off",
+    "compat-api/html": [
+      "default",
+      {
+        "ignore": [
+          "script[type=importmap]"
+        ]
+      }
+    ],
+    "axe/text-alternatives": [
+      "default",
+      {
+        "image-alt": "off"
+      }
+    ]
   }
 }
