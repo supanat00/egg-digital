@@ -6,6 +6,10 @@ import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
 const manifestForPlugin: Partial<VitePWAOptions> = {
   registerType: "prompt",
   includeAssets: ['favicon.ico', "apple-touc-icon.png", "masked-icon.png"],
+  workbox: {
+    // กำหนดขนาดสูงสุดสำหรับไฟล์ที่ precached ให้สูงถึง 5 MiB
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+  },
   manifest: {
     name: "Egg Digital",
     short_name: "Egg Digital",
