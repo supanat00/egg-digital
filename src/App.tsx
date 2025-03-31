@@ -1,7 +1,8 @@
 // App.tsx
 import { useState, useEffect } from 'react'
 import liff from '@line/liff'
-import MindAR from './MindAR'
+import MindAR from './components/MindAR'
+import './App.css'
 
 function App() {
   const [liffInitialized, setLiffInitialized] = useState(false)
@@ -30,11 +31,11 @@ function App() {
   }
 
   return (
-    <div>
+    <div className="card">
       <h1>My LIFF & MindAR App</h1>
       <button onClick={handleStart}>Start</button>
       {showAR && <MindAR />}
-      <p>{liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}</p>
+      <p className="read-the-docs">{liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}</p>
     </div>
   )
 }
