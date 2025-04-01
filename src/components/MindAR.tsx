@@ -40,7 +40,7 @@ function MindAR() {
     // เลือกกล้องที่มี label บอกว่า 'back' ถ้ามี ไม่เช่นนั้นเลือกตัวแรก
     const selectedCamera =
       videoDevices.find((device) => device.label.toLowerCase().includes('back')) ||
-      videoDevices[0];
+      videoDevices[1];
 
     // ขอสิทธิ์เข้าถึงกล้องโดยใช้ constraints ที่ระบุ deviceId ด้วย
     const stream = await navigator.mediaDevices.getUserMedia({
