@@ -38,7 +38,7 @@ function MindAR() {
         video: {
           facingMode: 'environment',
           aspectRatio: 1.777777778,
-          deviceId: 'camera2 0'
+          deviceId: { exact: 'camera2 0' }
         },
       })
 
