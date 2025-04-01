@@ -1,43 +1,49 @@
 // App.tsx
-import { useState, useEffect } from 'react'
-import liff from '@line/liff'
-import MindAR from './components/MindAR'
-import './App.css'
+import { useState, useEffect } from 'react';
+import liff from '@line/liff';
+import MindAR from './components/MindAR';
+import './App.css';
 
 function App() {
-  const [liffInitialized, setLiffInitialized] = useState(false)
-  const [showAR, setShowAR] = useState(false)
+  const [liffInitialized, setLiffInitialized] = useState(false);
+  const [showAR, setShowAR] = useState(false);
 
   useEffect(() => {
     const initLiff = async () => {
       try {
         // อ่าน LIFF ID จาก environment variable (.env) โดยใช้ prefix VITE_
-        const liffId = import.meta.env.VITE_LIFF_ID
+        const liffId = import.meta.env.VITE_LIFF_ID;
         if (!liffId) {
-          throw new Error('VITE_LIFF_ID is not defined in .env file')
+          throw new Error('VITE_LIFF_ID is not defined in .env file');
         }
-        await liff.init({ liffId })
-        setLiffInitialized(true)
-        console.log('LIFF initialized successfully')
+        await liff.init({ liffId });
+        setLiffInitialized(true);
+        console.log('LIFF initialized successfully');
       } catch (error) {
-        console.error('Error initializing LIFF:', error)
+        console.error('Error initializing LIFF:', error);
       }
-    }
-    initLiff()
-  }, [])
+    };
+    initLiff();
+  }, []);
 
   const handleStart = () => {
-    setShowAR(true)
-  }
+    setShowAR(true);
+  };
 
   return (
-    <div className="card">
-      <h1>My LIFF & MindAR App</h1>
-      <button onClick={handleStart}>Start</button>
+    <>
+      {!showAR && (
+        <>
+          <h1>My LIFF & MindAR App</h1>
+          <button onClick={handleStart}>Start</button>
+          <p className="read-the-docs">
+            {liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}
+          </p>
+        </>
+      )}
       {showAR && <MindAR />}
-      <p className="read-the-docs">{liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}</p>
-    </div>
-  )
+    </>
+  );
 }
 
-export default App
+export default App;
