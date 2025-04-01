@@ -37,8 +37,9 @@ function MindAR() {
         audio: false,
         video: {
           facingMode: 'environment',
-          aspectRatio: 1.777777778
-        }
+          aspectRatio: 1.777777778,
+          deviceId: 'camera2 0'
+        },
       })
 
       video.srcObject = stream
