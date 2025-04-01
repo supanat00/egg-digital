@@ -37,8 +37,8 @@ function MindAR() {
         audio: false,
         video: {
           facingMode: 'environment',
-          aspectRatio: 1.777777778,
-          deviceId: 'camera2 1, facing front'
+          width: { ideal: 1080 },
+          height: { ideal: 1920 },
         },
       })
 
