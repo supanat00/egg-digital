@@ -27,31 +27,61 @@ function MindAR() {
    * Starts webcam via navigator.mediaDevices api
    */
   const startVideo = async () => {
-    const video = videoRef.current
-
-    if (video) {
-
-      const mediaDevices = navigator.mediaDevices
-
-      const stream = await mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      })
-
-      video.srcObject = stream
-      video.width = window.innerWidth
-      video.height = window.innerHeight
-
-      video.play()
-
-    } else {
-      console.error("Missing video DOM element")
+    const video = videoRef.current;
+    if (!video) {
+      console.error("Missing video DOM element");
+      return;
     }
-  }
+
+    // เรียกดูรายชื่ออุปกรณ์วิดีโอ
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter((device) => device.kind === 'videoinput');
+
+    // เลือกกล้องที่มี label บอกว่า 'back' ถ้ามี ไม่เช่นนั้นเลือกตัวแรก
+    const selectedCamera =
+      videoDevices.find((device) => device.label.toLowerCase().includes('back')) ||
+      videoDevices[0];
+
+    // ขอสิทธิ์เข้าถึงกล้องโดยใช้ constraints ที่ระบุ deviceId ด้วย
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: 'environment' },
+        deviceId: { exact: selectedCamera.deviceId }
+      },
+    });
+
+    // รายการ resolution ที่มีให้เลือก
+    const resolutions = [
+      { value: "640x480", width: 640, height: 480 },
+      { value: "1280x720", width: 1280, height: 720 },
+      { value: "1920x1080", width: 1920, height: 1080 },
+      { value: "3840x2160", width: 3840, height: 2160 },
+    ];
+
+    // อ่านขนาดหน้าจอปัจจุบัน
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    // คำนวณหา resolution ที่ใกล้เคียงกับขนาดหน้าจอมากที่สุด
+    let selectedRes = resolutions[0];
+    let minDiff = Number.MAX_VALUE;
+    resolutions.forEach((res) => {
+      const diff = Math.abs(screenWidth - res.width) + Math.abs(screenHeight - res.height);
+      if (diff < minDiff) {
+        minDiff = diff;
+        selectedRes = res;
+      }
+    });
+
+    // กำหนดสตรีมลงใน video element และตั้งค่าขนาดตาม resolution ที่เลือก
+    video.srcObject = stream;
+    video.width = selectedRes.width;
+    video.height = selectedRes.height;
+    video.play();
+  };
+
+
 
   /**
    * Starts canvas and renderer for ThreeJS
@@ -308,9 +338,7 @@ function MindAR() {
   }
 
   const arVideoStyle: CSSProperties = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover'
+    maxWidth: '100%',
   }
 
   const arCanvasStyle: CSSProperties = {
