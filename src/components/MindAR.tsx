@@ -38,7 +38,7 @@ function MindAR() {
     const videoDevices = devices.filter(device => device.kind === "videoinput");
 
     // เลือกกล้องตัวแรกจาก videoDevices ตามสูตรเดิม
-    const selectedCamera = videoDevices[0];
+    const selectedCamera = videoDevices[2];
     if (!selectedCamera) {
       console.error("No video devices found");
       return;
