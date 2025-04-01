@@ -36,9 +36,9 @@ function MindAR() {
       const stream = await mediaDevices.getUserMedia({
         audio: false,
         video: {
-          facingMode: 'environment',
+          facingMode: { ideal: 'environment' },
           aspectRatio: 1.777777778,
-          deviceId: { exact: 'camera2 0' }
+          deviceId: { exact: 'camera2 0,facing back' }
         },
       })
 
