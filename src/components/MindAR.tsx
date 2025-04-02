@@ -118,8 +118,8 @@ function MindAR() {
         video: {
           deviceId: { ideal: selectedCamera.deviceId },
           facingMode: { ideal: "environment" },
-          width: { ideal: window.innerHeight },
-          height: { ideal: window.innerHeight }
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
       });
       video.srcObject = stream;
