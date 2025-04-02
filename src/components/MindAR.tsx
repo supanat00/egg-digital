@@ -117,10 +117,10 @@ function MindAR() {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
           video: {
-            deviceId: { exact: selectedCamera.deviceId },
+            deviceId: { ideal: selectedCamera.deviceId },
             facingMode: { ideal: "environment" },
-            width: { exact: selectedResolution.width },
-            height: { exact: selectedResolution.height }
+            width: { ideal: selectedResolution.width },
+            height: { ideal: selectedResolution.height }
           }
         });
         video.srcObject = stream;
@@ -131,7 +131,7 @@ function MindAR() {
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
-              deviceId: { exact: selectedCamera.deviceId },
+              deviceId: { ideal: selectedCamera.deviceId },
               facingMode: { ideal: "environment" },
               width: { ideal: selectedResolution.width },
               height: { ideal: selectedResolution.height }
@@ -145,8 +145,8 @@ function MindAR() {
         }
       }
 
-      video.width = selectedResolution.width;
-      video.height = selectedResolution.height;
+      video.width = window.innerWidth
+      video.height = window.innerHeight
       video.play();
     } catch (err) {
       addLog("Failed to start video stream.");
