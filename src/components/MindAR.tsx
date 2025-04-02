@@ -11,24 +11,24 @@ declare global {
   }
 }
 
-// interface ResolutionOption {
-//   label: string;
-//   width: number;
-//   height: number;
-// }
+interface ResolutionOption {
+  label: string;
+  width: number;
+  height: number;
+}
 
-// const resolutionOptions: ResolutionOption[] = [
-//   { label: "1280x720", width: 1280, height: 720 },
-//   { label: "1920x1080", width: 1920, height: 1080 },
-//   { label: "3840x2160", width: 3840, height: 2160 },
-// ];
+const resolutionOptions: ResolutionOption[] = [
+  { label: "1280x720", width: 1280, height: 720 },
+  { label: "1920x1080", width: 1920, height: 1080 },
+  { label: "3840x2160", width: 3840, height: 2160 },
+];
 
 function MindAR() {
   // General app state
   const [arReady, setARReady] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
-  // const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); // Default 1920x1080
+  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); // Default 1920x1080
   const [startAR, setStartAR] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -118,8 +118,8 @@ function MindAR() {
         video: {
           deviceId: { ideal: selectedCamera.deviceId },
           facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: selectedResolution.width },
+          height: { ideal: selectedResolution.height }
         }
       });
       video.srcObject = stream;
@@ -365,7 +365,7 @@ function MindAR() {
             </label>
           </div>
           <div>
-            {/* <label>
+            <label>
               Resolution:&nbsp;
               <select
                 value={`${selectedResolution.width}x${selectedResolution.height}`}
@@ -383,7 +383,7 @@ function MindAR() {
                   </option>
                 ))}
               </select>
-            </label> */}
+            </label>
           </div>
           <button
             onClick={() => {
