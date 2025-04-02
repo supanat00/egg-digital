@@ -17,7 +17,6 @@ interface ResolutionOption {
 }
 
 const resolutionOptions: ResolutionOption[] = [
-  { label: "640x480", width: 640, height: 480 },
   { label: "1280x720", width: 1280, height: 720 },
   { label: "1920x1080", width: 1920, height: 1080 },
   { label: "3840x2160", width: 3840, height: 2160 },
@@ -28,7 +27,7 @@ function MindAR() {
   const [arReady, setARReady] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
-  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[2]); // Default 1920x1080
+  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); // Default 1920x1080
   const [startAR, setStartAR] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,6 +42,29 @@ function MindAR() {
   // MindAR refs
   const markerRef = useRef<ARMarker | null>(null);
   const controllerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const requestPermissionAndListCameras = async () => {
+      try {
+        // ขอสิทธิ์กล้องแบบ minimal
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        // ปิด stream ทันทีเพื่อไม่ให้เปิดกล้องตลอด
+        stream.getTracks().forEach(track => track.stop());
+        // จากนั้น enumerate devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameras(videoDevices);
+        if (videoDevices.length > 0) {
+          setSelectedCameraId(videoDevices[0].deviceId);
+        }
+      } catch (error) {
+        console.error("Error requesting camera permission:", error);
+      }
+    };
+
+    requestPermissionAndListCameras();
+  }, []);
+
 
   // ดึงรายชื่อกล้องเมื่อ component mount
   useEffect(() => {
@@ -86,18 +108,39 @@ function MindAR() {
     }
 
     // ใช้ selectedResolution จาก state (ที่ผู้ใช้เลือก)
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        deviceId: { exact: selectedCamera.deviceId },
-        facingMode: { ideal: "environment" },
-        width: { ideal: selectedResolution.width },
-        height: { ideal: selectedResolution.height }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          deviceId: { exact: selectedCamera.deviceId },
+          facingMode: { ideal: "environment" },
+          width: { exact: selectedResolution.width },
+          height: { exact: selectedResolution.height }
+        }
+      });
+      video.srcObject = stream;
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "OverconstrainedError") {
+          console.warn("OverconstrainedError: Falling back to ideal constraints");
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              deviceId: { exact: selectedCamera.deviceId },
+              facingMode: { ideal: "environment" },
+              width: { ideal: selectedResolution.width },
+              height: { ideal: selectedResolution.height }
+            }
+          });
+          video.srcObject = stream;
+        } else {
+          console.error("Error starting video:", error.message);
+        }
+      } else {
+        console.error("Unknown error starting video");
       }
-    });
+    }
 
-
-    video.srcObject = stream;
     video.width = selectedResolution.width;
     video.height = selectedResolution.height;
     video.play();
