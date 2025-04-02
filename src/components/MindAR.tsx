@@ -94,63 +94,31 @@ function MindAR() {
    * Starts webcam using getUserMedia with selected camera and resolution.
    */
   const startVideo = async () => {
-    const video = videoRef.current;
-    if (!video) {
-      addLog("Missing video DOM element");
-      return;
-    }
+    const video = videoRef.current
 
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === "videoinput");
-      // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
-      const selectedCamera =
-        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
-      if (!selectedCamera) {
-        addLog("No video devices found");
-        return;
-      }
-      addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
+    if (video) {
 
-      try {
-        // ใช้ constraints แบบ exact หากรองรับ
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            deviceId: { ideal: selectedCamera.deviceId },
-            facingMode: { ideal: "environment" },
-            width: { ideal: selectedResolution.width },
-            height: { ideal: selectedResolution.height }
-          }
-        });
-        video.srcObject = stream;
-        addLog("Video stream started with exact constraints.");
-      } catch (error) {
-        if (error instanceof Error && error.name === "OverconstrainedError") {
-          addLog("OverconstrainedError: Falling back to ideal constraints");
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              deviceId: { ideal: selectedCamera.deviceId },
-              facingMode: { ideal: "environment" },
-              width: { ideal: selectedResolution.width },
-              height: { ideal: selectedResolution.height }
-            }
-          });
-          video.srcObject = stream;
-          addLog("Video stream started with ideal constraints fallback.");
-        } else {
-          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
-          console.error("Error starting video:", error);
+      const mediaDevices = navigator.mediaDevices
+
+      const stream = await mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: 'environment',
+          aspectRatio: 1.777777778
         }
-      }
+      })
+
+      video.srcObject = stream
       video.width = window.innerWidth
       video.height = window.innerHeight
-      video.play();
-    } catch (err) {
-      addLog("Failed to start video stream.");
+
+      video.play()
+
+    } else {
+      console.error("Missing video DOM element")
     }
-  };
+  }
+
 
   /**
    * Starts canvas and renderer for ThreeJS.
