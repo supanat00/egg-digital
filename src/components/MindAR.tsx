@@ -1,5 +1,6 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { ARMarker } from "../interfaces/MindAR";
+import DebugConsole from "./DebugConsole";
 import * as THREE from "three";
 import 'mind-ar/dist/mindar-image.prod';
 
@@ -29,6 +30,13 @@ function MindAR() {
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); // Default 1920x1080
   const [startAR, setStartAR] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  // ฟังก์ชันสำหรับเพิ่ม log
+  const addLog = (message: string) => {
+    setLogs(prev => [...prev, message]);
+    console.log(message);
+  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,21 +51,22 @@ function MindAR() {
   const markerRef = useRef<ARMarker | null>(null);
   const controllerRef = useRef<any>(null);
 
+  // Request permission and list cameras on mount
   useEffect(() => {
     const requestPermissionAndListCameras = async () => {
       try {
         // ขอสิทธิ์กล้องแบบ minimal
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        // ปิด stream ทันทีเพื่อไม่ให้เปิดกล้องตลอด
         stream.getTracks().forEach(track => track.stop());
-        // จากนั้น enumerate devices
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         setCameras(videoDevices);
         if (videoDevices.length > 0) {
           setSelectedCameraId(videoDevices[0].deviceId);
+          addLog("Camera permission granted. Found " + videoDevices.length + " cameras.");
         }
       } catch (error) {
+        addLog("Error requesting camera permission: " + (error instanceof Error ? error.message : "Unknown error"));
         console.error("Error requesting camera permission:", error);
       }
     };
@@ -65,8 +74,7 @@ function MindAR() {
     requestPermissionAndListCameras();
   }, []);
 
-
-  // ดึงรายชื่อกล้องเมื่อ component mount
+  // เรียกดึงรายชื่อกล้องอีกครั้ง (อาจเป็น redundant หากต้องการใช้เพียงครั้งเดียว)
   useEffect(() => {
     const listCameras = async () => {
       try {
@@ -75,8 +83,10 @@ function MindAR() {
         setCameras(videoDevices);
         if (videoDevices.length > 0) {
           setSelectedCameraId(videoDevices[0].deviceId);
+          addLog("Listed cameras: " + videoDevices.map(v => v.label).join(", "));
         }
       } catch (error) {
+        addLog("Error listing cameras: " + (error instanceof Error ? error.message : "Unknown error"));
         console.error("Error listing cameras:", error);
       }
     };
@@ -85,11 +95,11 @@ function MindAR() {
 
   /**
    * Starts webcam using getUserMedia with selected camera and resolution.
-   * ใช้ selectedCameraId และ selectedResolution จาก UI
    */
   const startVideo = async () => {
     const video = videoRef.current;
     if (!video) {
+      addLog("Missing video DOM element");
       console.error("Missing video DOM element");
       return;
     }
@@ -103,11 +113,14 @@ function MindAR() {
       videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
 
     if (!selectedCamera) {
+      addLog("No video devices found");
       console.error("No video devices found");
       return;
     }
 
-    // ใช้ selectedResolution จาก state (ที่ผู้ใช้เลือก)
+    addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
+
+    // ใช้ selectedResolution จาก state
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -119,10 +132,11 @@ function MindAR() {
         }
       });
       video.srcObject = stream;
+      addLog("Video stream started with exact constraints.");
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === "OverconstrainedError") {
-          console.warn("OverconstrainedError: Falling back to ideal constraints");
+          addLog("OverconstrainedError: Falling back to ideal constraints");
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
@@ -133,10 +147,13 @@ function MindAR() {
             }
           });
           video.srcObject = stream;
+          addLog("Video stream started with ideal constraints fallback.");
         } else {
+          addLog("Error starting video: " + error.message);
           console.error("Error starting video:", error.message);
         }
       } else {
+        addLog("Unknown error starting video");
         console.error("Unknown error starting video");
       }
     }
@@ -159,6 +176,7 @@ function MindAR() {
     renderer.setClearColor(0x000000, 0);
     renderer.setSize(window.innerWidth, window.innerHeight);
     rendererRef.current = renderer;
+    addLog("Canvas and renderer started.");
   };
 
   /**
@@ -177,6 +195,7 @@ function MindAR() {
       setupMarker,
       updateWorldMatrix,
     };
+    addLog("Marker initialized.");
   }, []);
 
   /**
@@ -194,6 +213,7 @@ function MindAR() {
     const quaternion = new THREE.Quaternion();
     matrix.compose(position, quaternion, scale);
     marker.postMatrix = matrix;
+    addLog("Marker setup with dimensions: " + dimensions.join("x"));
   };
 
   /**
@@ -204,9 +224,9 @@ function MindAR() {
     const marker = markerRef.current as ARMarker;
     const anchor = marker.anchor;
     if (anchor.visible && matrixFound) {
-      console.log('Target Found');
+      addLog('Target Found');
     } else if (anchor.visible && !matrixFound) {
-      console.log('Target Lost');
+      addLog('Target Lost');
     }
     anchor.visible = matrixFound;
     if (matrixFound) {
@@ -232,10 +252,12 @@ function MindAR() {
           if (candidate.targetIndex === targetIndex) {
             candidate.updateWorldMatrix(worldMatrix);
           }
+          addLog(`Controller update: targetIndex ${targetIndex}`);
         }
       },
     });
     controllerRef.current = arController;
+    addLog("Controller initialized.");
     return arController;
   };
 
@@ -246,6 +268,7 @@ function MindAR() {
     const marker = markerRef.current as ARMarker;
     const data = await arController.addImageTargets(marker.targetSrc);
     marker.setupMarker(data.dimensions[0]);
+    addLog("Marker registered. Dimensions: " + data.dimensions[0].join("x"));
   };
 
   /**
@@ -260,6 +283,7 @@ function MindAR() {
     camera.far = proj[14] / (proj[10] + 1.0);
     camera.updateProjectionMatrix();
     cameraRef.current = camera;
+    addLog("Camera setup complete.");
   };
 
   /**
@@ -278,12 +302,14 @@ function MindAR() {
     anchor.add(cube);
     scene.add(anchor, light);
     sceneRef.current = scene;
+    addLog("Scene composed with cube and light.");
   };
 
   /**
    * Handler to start AR process.
    */
   const handleStartAR = async () => {
+    addLog("Starting AR process...");
     await startVideo();
     startCanvas();
     initMarker();
@@ -293,6 +319,7 @@ function MindAR() {
     composeScene();
     await controller.dummyRun(videoRef.current!);
     setARReady(true);
+    addLog("AR is ready.");
   };
 
   useEffect(() => {
@@ -375,6 +402,7 @@ function MindAR() {
       )}
       <video ref={videoRef} style={arVideoStyle} />
       <canvas ref={canvasRef} style={arCanvasStyle} />
+      <DebugConsole logs={logs} />
     </div>
   );
 }
