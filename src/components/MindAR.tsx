@@ -51,7 +51,7 @@ function MindAR() {
   const markerRef = useRef<ARMarker | null>(null);
   const controllerRef = useRef<any>(null);
 
-  // Request permission and list cameras on mount
+  // ขอสิทธิ์กล้องและดึงรายชื่อกล้องทันทีเมื่อ component mount
   useEffect(() => {
     const requestPermissionAndListCameras = async () => {
       try {
@@ -70,11 +70,10 @@ function MindAR() {
         console.error("Error requesting camera permission:", error);
       }
     };
-
     requestPermissionAndListCameras();
   }, []);
 
-  // เรียกดึงรายชื่อกล้องอีกครั้ง (อาจเป็น redundant หากต้องการใช้เพียงครั้งเดียว)
+  // เรียกดึงรายชื่อกล้องอีกครั้ง (บางครั้งอาจมีการอัปเดต)
   useEffect(() => {
     const listCameras = async () => {
       try {
@@ -122,6 +121,7 @@ function MindAR() {
 
     // ใช้ selectedResolution จาก state
     try {
+      // ใช้ constraints แบบ exact หากรองรับ
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
@@ -223,10 +223,10 @@ function MindAR() {
     const matrixFound = worldMatrixUpdate !== null;
     const marker = markerRef.current as ARMarker;
     const anchor = marker.anchor;
-    if (anchor.visible && matrixFound) {
-      addLog('Target Found');
-    } else if (anchor.visible && !matrixFound) {
-      addLog('Target Lost');
+    if (matrixFound) {
+      addLog("Target Acquired: Rendering 3D model.");
+    } else {
+      addLog("Target Lost: 3D model deactivated.");
     }
     anchor.visible = matrixFound;
     if (matrixFound) {
@@ -339,30 +339,37 @@ function MindAR() {
 
   // CSS styles: Container covers full viewport; canvas is full-screen overlay.
   const appStyle: CSSProperties = {
-    width: '100vw',
-    height: '100vh',
-    overflow: 'hidden',
-    position: 'relative',
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
+    position: "relative",
   };
 
   const arVideoStyle: CSSProperties = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
   };
 
   const arCanvasStyle: CSSProperties = {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-    top: '0',
-    left: '0',
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    top: "0",
+    left: "0",
   };
 
   return (
     <div style={appStyle}>
       {!startAR && (
-        <div style={{ position: 'absolute', zIndex: 10, background: 'rgba(0,0,0,0.5)', padding: '1rem' }}>
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 10,
+            background: "rgba(0,0,0,0.5)",
+            padding: "1rem",
+          }}
+        >
           <div>
             <label>
               Camera:&nbsp;
@@ -384,8 +391,10 @@ function MindAR() {
               <select
                 value={`${selectedResolution.width}x${selectedResolution.height}`}
                 onChange={(e) => {
-                  const [w, h] = e.target.value.split('x').map(Number);
-                  const found = resolutionOptions.find(res => res.width === w && res.height === h);
+                  const [w, h] = e.target.value.split("x").map(Number);
+                  const found = resolutionOptions.find(
+                    (res) => res.width === w && res.height === h
+                  );
                   if (found) setSelectedResolution(found);
                 }}
               >
@@ -397,7 +406,14 @@ function MindAR() {
               </select>
             </label>
           </div>
-          <button onClick={() => { setStartAR(true); handleStartAR(); }}>Start AR</button>
+          <button
+            onClick={() => {
+              setStartAR(true);
+              handleStartAR();
+            }}
+          >
+            Start AR
+          </button>
         </div>
       )}
       <video ref={videoRef} style={arVideoStyle} />
