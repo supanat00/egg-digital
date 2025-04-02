@@ -27,63 +27,31 @@ function MindAR() {
    * Starts webcam via navigator.mediaDevices api
    */
   const startVideo = async () => {
-    const video = videoRef.current;
-    if (!video) {
-      console.error("Missing video DOM element");
-      return;
+    const video = videoRef.current
+
+    if (video) {
+
+      const mediaDevices = navigator.mediaDevices
+
+      const stream = await mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      })
+
+      video.srcObject = stream
+      video.width = window.innerWidth
+      video.height = window.innerHeight
+
+      video.play()
+
+    } else {
+      console.error("Missing video DOM element")
     }
-
-    // ดึงรายชื่ออุปกรณ์วิดีโอ
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === "videoinput");
-
-    // เลือกกล้องตัวแรกจาก videoDevices ตามสูตรเดิม
-    const selectedCamera = videoDevices[2];
-    if (!selectedCamera) {
-      console.error("No video devices found");
-      return;
-    }
-
-    // กำหนดรายการ resolution ที่มีให้เลือก
-    const resolutions = [
-      { width: 640, height: 480 },
-      { width: 1280, height: 720 },
-      { width: 1920, height: 1080 },
-      { width: 3840, height: 2160 }
-    ];
-
-    // อ่านขนาดหน้าจอปัจจุบัน
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    // เลือก resolution ที่ใกล้เคียงกับขนาดหน้าจอมากที่สุด
-    let selectedRes = resolutions[0];
-    let minDiff = Number.MAX_VALUE;
-    resolutions.forEach((res) => {
-      const diff = Math.abs(screenWidth - res.width) + Math.abs(screenHeight - res.height);
-      if (diff < minDiff) {
-        minDiff = diff;
-        selectedRes = res;
-      }
-    });
-
-    // สร้าง constraints สำหรับ getUserMedia โดยใช้ deviceId และ resolution ที่เลือก
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        deviceId: { exact: selectedCamera.deviceId },
-        facingMode: { ideal: "environment" },
-        width: { exact: selectedRes.width },
-        height: { exact: selectedRes.height }
-      }
-    });
-
-    video.srcObject = stream;
-    video.width = selectedRes.width;
-    video.height = selectedRes.height;
-    video.play();
-  };
-
+  }
 
   /**
    * Starts canvas and renderer for ThreeJS
@@ -340,8 +308,9 @@ function MindAR() {
   }
 
   const arVideoStyle: CSSProperties = {
-    maxWidth: '100%',
-    objectFit: 'cover',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
   }
 
   const arCanvasStyle: CSSProperties = {
