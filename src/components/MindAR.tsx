@@ -18,7 +18,7 @@ interface ResolutionOption {
 }
 
 const resolutionOptions: ResolutionOption[] = [
-  { label: "1280x720", width: 1280, height: 720 },
+  { label: "1280x720", width: window.innerHeight, height: window.innerWidth },
   { label: "1920x1080", width: 1920, height: 1080 },
   { label: "3840x2160", width: 3840, height: 2160 },
 ];
@@ -94,31 +94,64 @@ function MindAR() {
    * Starts webcam using getUserMedia with selected camera and resolution.
    */
   const startVideo = async () => {
-    const video = videoRef.current
-
-    if (video) {
-
-      const mediaDevices = navigator.mediaDevices
-
-      const stream = await mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: 'environment',
-          aspectRatio: 1.777777778
-        }
-      })
-
-      video.srcObject = stream
-      video.width = window.innerWidth
-      video.height = window.innerHeight
-
-      video.play()
-
-    } else {
-      console.error("Missing video DOM element")
+    const video = videoRef.current;
+    if (!video) {
+      addLog("Missing video DOM element");
+      return;
     }
-  }
 
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === "videoinput");
+      // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
+      const selectedCamera =
+        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
+      if (!selectedCamera) {
+        addLog("No video devices found");
+        return;
+      }
+      addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
+
+      try {
+        // ใช้ constraints แบบ exact หากรองรับ
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            deviceId: { exact: selectedCamera.deviceId },
+            facingMode: { ideal: "environment" },
+            width: { exact: selectedResolution.width },
+            height: { exact: selectedResolution.height }
+          }
+        });
+        video.srcObject = stream;
+        addLog("Video stream started with exact constraints.");
+      } catch (error) {
+        if (error instanceof Error && error.name === "OverconstrainedError") {
+          addLog("OverconstrainedError: Falling back to ideal constraints");
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              deviceId: { exact: selectedCamera.deviceId },
+              facingMode: { ideal: "environment" },
+              width: { ideal: selectedResolution.width },
+              height: { ideal: selectedResolution.height }
+            }
+          });
+          video.srcObject = stream;
+          addLog("Video stream started with ideal constraints fallback.");
+        } else {
+          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
+          console.error("Error starting video:", error);
+        }
+      }
+
+      video.width = selectedResolution.width;
+      video.height = selectedResolution.height;
+      video.play();
+    } catch (err) {
+      addLog("Failed to start video stream.");
+    }
+  };
 
   /**
    * Starts canvas and renderer for ThreeJS.
