@@ -112,41 +112,21 @@ function MindAR() {
       }
       addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
 
-      try {
-        // ใช้ constraints แบบ exact หากรองรับ
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            deviceId: { ideal: selectedCamera.deviceId },
-            facingMode: { ideal: "environment" },
-            width: { ideal: selectedResolution.width },
-            height: { ideal: selectedResolution.height }
-          }
-        });
-        video.srcObject = stream;
-        addLog("Video stream started with exact constraints.");
-      } catch (error) {
-        if (error instanceof Error && error.name === "OverconstrainedError") {
-          addLog("OverconstrainedError: Falling back to ideal constraints");
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              deviceId: { ideal: selectedCamera.deviceId },
-              facingMode: { ideal: "environment" },
-              width: { ideal: selectedResolution.width },
-              height: { ideal: selectedResolution.height }
-            }
-          });
-          video.srcObject = stream;
-          addLog("Video stream started with ideal constraints fallback.");
-        } else {
-          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
-          console.error("Error starting video:", error);
+      // ใช้ constraints แบบ exact หากรองรับ
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          deviceId: { ideal: selectedCamera.deviceId },
+          facingMode: { ideal: "environment" },
+          width: { ideal: window.innerHeight },
+          height: { ideal: window.innerHeight }
         }
-      }
-
+      });
+      video.srcObject = stream;
       video.width = window.innerWidth
       video.height = window.innerHeight
+      addLog("Video stream started with exact constraints.");
+
       video.play();
     } catch (err) {
       addLog("Failed to start video stream.");
@@ -295,19 +275,32 @@ function MindAR() {
   /**
    * Handler to start AR process.
    */
-  const handleStartAR = async () => {
-    addLog("Starting AR process...");
-    await startVideo();
-    startCanvas();
-    initMarker();
-    const controller = initController();
-    await registerMarker(controller);
-    setupCamera(controller);
-    composeScene();
-    await controller.dummyRun(videoRef.current!);
-    setARReady(true);
-    addLog("AR is ready.");
-  };
+  useEffect(() => {
+    const startAR = async () => {
+      // Generic webcam and ThreeJS canvas init
+      await startVideo()
+      startCanvas()
+
+      // MindAR init
+      initMarker()
+      const controller = initController()
+      await registerMarker(controller)
+
+      // ThreeJS Camera and Scene init
+      setupCamera(controller)
+      composeScene()
+
+      // AR Controller needs to warm up gpu
+      // Check MindAR source for more info
+      // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js#L106-L112
+      await controller.dummyRun(videoRef.current)
+
+      // This triggers AR processing and scene render
+      setARReady(true)
+    }
+
+    startAR()
+  }, [initMarker])
 
   useEffect(() => {
     if (arReady) {
@@ -316,7 +309,9 @@ function MindAR() {
         const camera = cameraRef.current as THREE.PerspectiveCamera;
         const scene = sceneRef.current as THREE.Scene;
         renderer.render(scene, camera);
-        animationFrameRef.current = window.requestAnimationFrame(animateScene);
+        animationFrameRef.current = window.requestAnimationFrame(() => {
+          animateScene()
+        })
       };
 
       controllerRef.current.processVideo(videoRef.current!);
@@ -395,7 +390,6 @@ function MindAR() {
           <button
             onClick={() => {
               setStartAR(true);
-              handleStartAR();
             }}
           >
             Start AR
