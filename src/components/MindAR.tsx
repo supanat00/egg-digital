@@ -112,19 +112,40 @@ function MindAR() {
       }
       addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
 
-      // ใช้ constraints แบบ exact หากรองรับ
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          deviceId: { ideal: selectedCamera.deviceId },
-          facingMode: { ideal: "environment" },
-          width: { ideal: selectedResolution.width },
-          height: { ideal: selectedResolution.height }
+      try {
+        // ใช้ constraints แบบ exact หากรองรับ
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            deviceId: { ideal: selectedCamera.deviceId },
+            facingMode: { ideal: "environment" },
+            width: { ideal: selectedResolution.width },
+            height: { ideal: selectedResolution.height }
+          }
+        });
+        video.srcObject = stream;
+        addLog("Video stream started with exact constraints.");
+      } catch (error) {
+        if (error instanceof Error && error.name === "OverconstrainedError") {
+          addLog("OverconstrainedError: Falling back to ideal constraints");
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              deviceId: { ideal: selectedCamera.deviceId },
+              facingMode: { ideal: "environment" },
+              width: { ideal: selectedResolution.width },
+              height: { ideal: selectedResolution.height }
+            }
+          });
+          video.srcObject = stream;
+          addLog("Video stream started with ideal constraints fallback.");
+        } else {
+          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
+          console.error("Error starting video:", error);
         }
-      });
-      video.srcObject = stream;
-      addLog("Video stream started with exact constraints.");
-
+      }
+      video.width = window.innerWidth
+      video.height = window.innerHeight
       video.play();
     } catch (err) {
       addLog("Failed to start video stream.");
