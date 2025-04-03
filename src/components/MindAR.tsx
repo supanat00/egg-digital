@@ -295,32 +295,33 @@ function MindAR() {
   /**
    * Handler to start AR process.
    */
-  useEffect(() => {
-    const startAR = async () => {
-      // Generic webcam and ThreeJS canvas init
-      await startVideo()
-      startCanvas()
 
-      // MindAR init
-      initMarker()
-      const controller = initController()
-      await registerMarker(controller)
+  // useEffect(() => {
+  //   const startAR = async () => {
+  //     // Generic webcam and ThreeJS canvas init
+  //     await startVideo()
+  //     startCanvas()
 
-      // ThreeJS Camera and Scene init
-      setupCamera(controller)
-      composeScene()
+  //     // MindAR init
+  //     initMarker()
+  //     const controller = initController()
+  //     await registerMarker(controller)
 
-      // AR Controller needs to warm up gpu
-      // Check MindAR source for more info
-      // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js#L106-L112
-      await controller.dummyRun(videoRef.current)
+  //     // ThreeJS Camera and Scene init
+  //     setupCamera(controller)
+  //     composeScene()
 
-      // This triggers AR processing and scene render
-      setARReady(true)
-    }
+  //     // AR Controller needs to warm up gpu
+  //     // Check MindAR source for more info
+  //     // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js#L106-L112
+  //     await controller.dummyRun(videoRef.current)
 
-    startAR()
-  }, [initMarker])
+  //     // This triggers AR processing and scene render
+  //     setARReady(true)
+  //   }
+
+  //   startAR()
+  // }, [initMarker])
 
   const handleStartAR = async () => {
     addLog("Starting AR process...");
