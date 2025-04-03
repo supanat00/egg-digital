@@ -4,13 +4,6 @@ import DebugConsole from "./DebugConsole";
 import * as THREE from "three";
 import 'mind-ar/dist/mindar-image.prod';
 
-// Global declaration สำหรับ window.MINDAR
-declare global {
-  interface Window {
-    MINDAR: any;
-  }
-}
-
 interface ResolutionOption {
   label: string;
   width: number;
@@ -164,7 +157,7 @@ function MindAR() {
       antialias: true
     });
     renderer.setClearColor(0x000000, 0);
-    renderer.setSize(selectedResolution.width, selectedResolution.height);
+    renderer.setSize(window.innerWidth, window.innerHeight);
     rendererRef.current = renderer;
     addLog("Canvas and renderer started.");
   };

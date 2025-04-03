@@ -1,4 +1,4 @@
-import { THREE } from "aframe";
+import * as THREE from "three";
 
 /** Helpful interface to deal with AR markers in MindAR */
 export interface ARMarker {
