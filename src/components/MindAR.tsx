@@ -164,7 +164,7 @@ function MindAR() {
       antialias: true
     });
     renderer.setClearColor(0x000000, 0);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(selectedResolution.width, selectedResolution.height);
     rendererRef.current = renderer;
     addLog("Canvas and renderer started.");
   };
