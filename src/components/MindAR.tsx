@@ -102,13 +102,15 @@ function MindAR() {
         video: {
           deviceId: { ideal: selectedCamera.deviceId },
           facingMode: 'environment',
-          aspectRatio: 1.777777778
+          aspectRatio: 1.777777778,
+          width: 1920,
+          height: 1080,
         },
       })
 
       video.srcObject = stream
-      video.width = window.innerWidth
-      video.height = window.innerHeight
+      video.width = 1920
+      video.height = 1080
 
       video.play()
 
