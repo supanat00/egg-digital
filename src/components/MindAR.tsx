@@ -4,24 +4,24 @@ import DebugConsole from "./DebugConsole";
 import * as THREE from "three";
 import 'mind-ar/dist/mindar-image.prod';
 
-interface ResolutionOption {
-  label: string;
-  width: number;
-  height: number;
-}
+// interface ResolutionOption {
+//   label: string;
+//   width: number;
+//   height: number;
+// }
 
-const resolutionOptions: ResolutionOption[] = [
-  { label: "1280x720", width: window.innerWidth, height: window.innerHeight },
-  { label: "1920x1080", width: 1920, height: 1080 },
-  { label: "3840x2160", width: 3840, height: 2160 },
-];
+// const resolutionOptions: ResolutionOption[] = [
+//   { label: "1280x720", width: window.innerWidth, height: window.innerHeight },
+//   { label: "1920x1080", width: 1920, height: 1080 },
+//   { label: "3840x2160", width: 3840, height: 2160 },
+// ];
 
 function MindAR() {
   // General app state
   const [arReady, setARReady] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
-  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); // Default 1920x1080
+  // const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]); 
   const [startAR, setStartAR] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -68,83 +68,115 @@ function MindAR() {
   }, []);
 
   // เพิ่ม listener เพื่อ update renderer และ camera เมื่อหน้าจอถูก resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (rendererRef.current) {
-        rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-      }
-      if (cameraRef.current) {
-        cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-        cameraRef.current.updateProjectionMatrix();
-      }
-      addLog(`Window resized: ${window.innerWidth}x${window.innerHeight}`);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     if (rendererRef.current) {
+  //       rendererRef.current.setSize(window.innerWidth, window.innerHeight);
+  //     }
+  //     if (cameraRef.current) {
+  //       cameraRef.current.aspect = window.innerWidth / window.innerHeight;
+  //       cameraRef.current.updateProjectionMatrix();
+  //     }
+  //     addLog(`Window resized: ${window.innerWidth}x${window.innerHeight}`);
+  //   };
+  //   window.addEventListener("resize", handleResize);
+  //   return () => window.removeEventListener("resize", handleResize);
+  // }, []);
 
   /**
    * Starts webcam using getUserMedia with selected camera and resolution.
    */
-  const startVideo = async () => {
-    const video = videoRef.current;
-    if (!video) {
-      addLog("Missing video DOM element");
-      return;
-    }
 
-    try {
+  const startVideo = async () => {
+    const video = videoRef.current
+
+    if (video) {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === "videoinput");
       // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
-      const selectedCamera =
-        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
-      if (!selectedCamera) {
-        addLog("No video devices found");
-        return;
-      }
-      addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
+      const selectedCamera = videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
+      const mediaDevices = navigator.mediaDevices
 
-      try {
-        // ใช้ constraints แบบ exact หากรองรับ
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            deviceId: { ideal: selectedCamera.deviceId },
-            facingMode: { ideal: "environment" },
-            width: { ideal: selectedResolution.width },
-            height: { ideal: selectedResolution.height }
-          }
-        });
-        video.srcObject = stream;
-        addLog("Video stream started with exact constraints.");
-      } catch (error) {
-        if (error instanceof Error && error.name === "OverconstrainedError") {
-          addLog("OverconstrainedError: Falling back to ideal constraints");
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              deviceId: { ideal: selectedCamera.deviceId },
-              facingMode: { ideal: "environment" },
-              width: { ideal: selectedResolution.width },
-              height: { ideal: selectedResolution.height }
-            }
-          });
-          video.srcObject = stream;
-          addLog("Video stream started with ideal constraints fallback.");
-        } else {
-          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
-          console.error("Error starting video:", error);
-        }
-      }
+      const stream = await mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          deviceId: { ideal: selectedCamera.deviceId },
+          facingMode: 'environment',
+          aspectRatio: 1.777777778
+        },
+      })
 
-      video.width = selectedResolution.width;
-      video.height = selectedResolution.height;
-      video.play();
-    } catch (err) {
-      addLog("Failed to start video stream.");
+      video.srcObject = stream
+      video.width = window.innerWidth
+      video.height = window.innerHeight
+
+      video.play()
+
+    } else {
+      console.error("Missing video DOM element")
     }
-  };
+  }
+
+
+  // const startVideo = async () => {
+  //   const video = videoRef.current;
+  //   if (!video) {
+  //     addLog("Missing video DOM element");
+  //     return;
+  //   }
+
+  //   try {
+  //     const devices = await navigator.mediaDevices.enumerateDevices();
+  //     const videoDevices = devices.filter(device => device.kind === "videoinput");
+  //     // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
+  //     const selectedCamera =
+  //       videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
+  //     if (!selectedCamera) {
+  //       addLog("No video devices found");
+  //       return;
+  //     }
+  //     addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
+
+  //     try {
+  //       // ใช้ constraints แบบ exact หากรองรับ
+  //       const stream = await navigator.mediaDevices.getUserMedia({
+  //         audio: false,
+  //         video: {
+  //           deviceId: { ideal: selectedCamera.deviceId },
+  //           facingMode: { ideal: "environment" },
+  //           width: { ideal: selectedResolution.width },
+  //           height: { ideal: selectedResolution.height }
+  //         }
+  //       });
+  //       video.srcObject = stream;
+  //       addLog("Video stream started with exact constraints.");
+  //     } catch (error) {
+  //       if (error instanceof Error && error.name === "OverconstrainedError") {
+  //         addLog("OverconstrainedError: Falling back to ideal constraints");
+  //         const stream = await navigator.mediaDevices.getUserMedia({
+  //           audio: false,
+  //           video: {
+  //             deviceId: { ideal: selectedCamera.deviceId },
+  //             facingMode: { ideal: "environment" },
+  //             width: { ideal: selectedResolution.width },
+  //             height: { ideal: selectedResolution.height }
+  //           }
+  //         });
+  //         video.srcObject = stream;
+  //         addLog("Video stream started with ideal constraints fallback.");
+  //       } else {
+  //         addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
+  //         console.error("Error starting video:", error);
+  //       }
+  //     }
+
+  //     video.width = selectedResolution.width;
+  //     video.height = selectedResolution.height;
+  //     video.play();
+  //   } catch (err) {
+  //     addLog("Failed to start video stream.");
+  //   }
+  // };
 
   /**
    * Starts canvas and renderer for ThreeJS.
@@ -394,7 +426,7 @@ function MindAR() {
               </select>
             </label>
           </div>
-          <div>
+          {/* <div>
             <label>
               Resolution:&nbsp;
               <select
@@ -414,7 +446,7 @@ function MindAR() {
                 ))}
               </select>
             </label>
-          </div>
+          </div> */}
           <button
             onClick={() => {
               setStartAR(true);
