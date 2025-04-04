@@ -102,7 +102,6 @@ function MindAR() {
         video: {
           deviceId: { ideal: selectedCamera.deviceId },
           facingMode: 'environment',
-          aspectRatio: 1.777777778
         },
       })
 
@@ -457,7 +456,7 @@ function MindAR() {
           </button>
         </div>
       )}
-      <video ref={videoRef} style={arVideoStyle} />
+      <video playsInline autoPlay ref={videoRef} style={arVideoStyle} />
       <canvas ref={canvasRef} style={arCanvasStyle} />
       <DebugConsole logs={logs} />
     </div>
