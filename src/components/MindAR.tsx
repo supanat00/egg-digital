@@ -11,7 +11,7 @@ interface ResolutionOption {
 }
 
 const resolutionOptions: ResolutionOption[] = [
-  { label: "1280x720", width: window.innerHeight, height: window.innerWidth },
+  { label: "1280x720", width: window.innerWidth, height: window.innerHeight },
   { label: "1920x1080", width: 1920, height: 1080 },
   { label: "3840x2160", width: 3840, height: 2160 },
 ];
