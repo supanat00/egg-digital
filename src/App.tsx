@@ -29,18 +29,24 @@ function App() {
 
   return (
     <>
-      {/* หน้าแรกของแอพ */}
+      {/* Home screen - only show when not in AR mode */}
       {!startAR && (
         <div className="home">
           <h1>My LIFF & MindAR App</h1>
-          <button onClick={() => setStartAR(true)}>Start</button>
+          {/* Only allow starting AR if permission is granted */}
+          <button
+            onClick={() => setStartAR(true)}
+            disabled={!permissionGranted}
+          >
+            {permissionGranted ? 'Start AR' : 'Waiting for camera permission...'}
+          </button>
           <p className="read-the-docs">
             {liffInitialized ? 'LIFF initialized successfully.' : 'Loading LIFF...'}
           </p>
         </div>
       )}
 
-      {/* แสดง CameraPermission และ Preloader ในขณะที่ยังไม่ได้รับ permission */}
+      {/* Always show permission request until granted */}
       {!permissionGranted && (
         <>
           <CameraPermission onPermissionGranted={() => setPermissionGranted(true)} />
@@ -48,8 +54,8 @@ function App() {
         </>
       )}
 
-      {/* เมื่อกด Start AR, แสดง MindAR component */}
-      {startAR && <MindAR />}
+      {/* Only show MindAR when AR should start AND permission is granted */}
+      {startAR && permissionGranted && <MindAR />}
     </>
   );
 }

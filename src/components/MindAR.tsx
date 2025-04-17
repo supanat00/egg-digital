@@ -374,19 +374,19 @@ function MindAR() {
     startAR()
   }, [initMarker])
 
-  // const handleStartAR = async () => {
-  //   addLog("Starting AR process...");
-  //   await startVideo();
-  //   startCanvas();
-  //   initMarker();
-  //   const controller = initController();
-  //   await registerMarker(controller);
-  //   setupCamera(controller);
-  //   composeScene();
-  //   await controller.dummyRun(videoRef.current!);
-  //   setARReady(true);
-  //   addLog("AR is ready.");
-  // };
+  const handleStartAR = async () => {
+    addLog("Starting AR process...");
+    await startVideo();
+    startCanvas();
+    initMarker();
+    const controller = initController();
+    await registerMarker(controller);
+    setupCamera(controller);
+    composeScene();
+    await controller.dummyRun(videoRef.current!);
+    setARReady(true);
+    addLog("AR is ready.");
+  };
 
   useEffect(() => {
     if (arReady) {
@@ -476,6 +476,7 @@ function MindAR() {
           <button
             onClick={() => {
               setStartAR(true);
+              handleStartAR();
             }}
           >
             Start AR
