@@ -254,25 +254,39 @@ function MindAR() {
     addLog("Marker setup with dimensions: " + dimensions.join("x"));
   };
 
-  /**
-   * Updates the world matrix of the marker.
-   */
+  // Update your updateWorldMatrix function to include more debugging
   const updateWorldMatrix = (worldMatrixUpdate: number[] | null) => {
     const matrixFound = worldMatrixUpdate !== null;
     const marker = markerRef.current as ARMarker;
     const anchor = marker.anchor;
+
     if (matrixFound) {
+      console.log("TARGET FOUND!", worldMatrixUpdate);
       addLog("Target Acquired: Rendering 3D model.");
     } else {
+      console.log("Target lost");
       addLog("Target Lost: 3D model deactivated.");
     }
+
+    // Ensure the anchor is in the scene
+    if (!sceneRef.current?.children.includes(anchor)) {
+      console.warn("Anchor not in scene!");
+      if (sceneRef.current) sceneRef.current.add(anchor);
+    }
+
     anchor.visible = matrixFound;
+
     if (matrixFound) {
       const postMatrix = marker.postMatrix;
       const updatedMatrix = new THREE.Matrix4();
       updatedMatrix.elements = worldMatrixUpdate as THREE.Matrix4Tuple;
       updatedMatrix.multiply(postMatrix);
       anchor.matrix = updatedMatrix;
+
+      // Force an update if needed
+      if (rendererRef.current) {
+        rendererRef.current.render(sceneRef.current as THREE.Scene, cameraRef.current as THREE.PerspectiveCamera);
+      }
     }
   };
 
@@ -324,23 +338,39 @@ function MindAR() {
     addLog("Camera setup complete.");
   };
 
-  /**
-   * Creates a new ThreeJS scene, adds objects, and sets scene ref.
-   */
+  // Update your composeScene function to create a more visible model
   const composeScene = () => {
     const scene = new THREE.Scene();
     const marker = markerRef.current as ARMarker;
     const anchor = marker.anchor;
-    const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+    // Create a more visible cube
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xff0000,  // Bright red
+      emissive: 0x222222, // Slight emissive glow
+      roughness: 0.5
+    });
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const cube = new THREE.Mesh(geometry, material);
-    const light = new THREE.DirectionalLight(0xff0000, 0.5);
-    light.rotation.x = Math.PI / 2;
+
+    // Make the cube larger
+    cube.scale.set(0.5, 0.5, 0.5);
+
+    // Add ambient light for better visibility
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+
+    // Add directional light
+    const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(1, 1, 1);
+
+    // Add everything to the scene
     anchor.add(cube);
-    scene.add(anchor, light);
+    scene.add(anchor);
+    scene.add(light);
+    scene.add(ambientLight);
+
     sceneRef.current = scene;
-    addLog("Scene composed with cube and light.");
+    addLog("Scene composed with enhanced cube and lighting.");
   };
 
   /**
@@ -374,35 +404,85 @@ function MindAR() {
     startAR()
   }, [initMarker])
 
+  // Combine all initialization steps in a single handler
   const handleStartAR = async () => {
     addLog("Starting AR process...");
-    await startVideo();
-    startCanvas();
-    initMarker();
-    const controller = initController();
-    await registerMarker(controller);
-    setupCamera(controller);
-    composeScene();
-    await controller.dummyRun(videoRef.current!);
-    setARReady(true);
-    addLog("AR is ready.");
+
+    try {
+      // Step 1: Start video and canvas
+      await startVideo();
+      startCanvas();
+
+      // Step 2: Initialize MindAR components
+      initMarker();
+      const controller = initController();
+      await registerMarker(controller);
+
+      // Step 3: Setup ThreeJS components
+      setupCamera(controller);
+      composeScene();
+
+      // Step 4: Run dummy process for GPU warmup
+      if (videoRef.current) {
+        await controller.dummyRun(videoRef.current);
+
+        // Step 5: Start animation and processing
+        controllerRef.current.processVideo(videoRef.current);
+        setARReady(true);
+
+        // Add extra logging to verify marker detection is working
+        addLog("AR is ready. Looking for markers...");
+      } else {
+        addLog("Error: Video element not found");
+      }
+    } catch (error) {
+      addLog("Error initializing AR: " + (error instanceof Error ? error.message : "Unknown error"));
+      console.error("Error initializing AR:", error);
+    }
   };
 
+  // Create a separate animation function that runs when arReady changes
   useEffect(() => {
-    if (arReady) {
-      const animateScene = () => {
-        const renderer = rendererRef.current as THREE.WebGLRenderer;
-        const camera = cameraRef.current as THREE.PerspectiveCamera;
-        const scene = sceneRef.current as THREE.Scene;
-        renderer.render(scene, camera);
-        animationFrameRef.current = window.requestAnimationFrame(() => {
-          animateScene()
-        })
-      };
+    if (!arReady) return;
 
-      controllerRef.current.processVideo(videoRef.current!);
-      animateScene();
-    }
+    addLog("Starting animation loop");
+
+    const animateScene = () => {
+      if (!rendererRef.current || !cameraRef.current || !sceneRef.current) {
+        console.error("Missing ThreeJS components");
+        return;
+      }
+
+      const renderer = rendererRef.current;
+      const camera = cameraRef.current;
+      const scene = sceneRef.current;
+
+      // Add logging to check if animation loop is running
+      console.log("Rendering frame");
+
+      renderer.render(scene, camera);
+      animationFrameRef.current = window.requestAnimationFrame(animateScene);
+    };
+
+    animateScene();
+
+    // Cleanup function
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      // Stop video streams
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(track => track.stop());
+      }
+
+      // Cleanup controller if needed
+      if (controllerRef.current) {
+        // Add controller cleanup if the library provides one
+      }
+    };
   }, [arReady]);
 
   const appStyle: CSSProperties = {
@@ -426,6 +506,7 @@ function MindAR() {
     left: "0",
   };
 
+  // Update your UI to include a debug option to verify marker detection
   return (
     <div style={appStyle}>
       {!startAR && (
@@ -437,6 +518,7 @@ function MindAR() {
             padding: "1rem",
           }}
         >
+          {/* Camera and resolution selectors */}
           <div>
             <label>
               Camera:&nbsp;
@@ -483,6 +565,36 @@ function MindAR() {
           </button>
         </div>
       )}
+
+      {/* Add a status indicator */}
+      {startAR && !arReady && (
+        <div style={{
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+          background: "rgba(0,0,0,0.7)",
+          color: "white",
+          padding: "5px",
+          zIndex: 15
+        }}>
+          Initializing AR...
+        </div>
+      )}
+
+      {startAR && arReady && (
+        <div style={{
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+          background: "rgba(0,0,0,0.7)",
+          color: "white",
+          padding: "5px",
+          zIndex: 15
+        }}>
+          AR Ready - Point camera at marker
+        </div>
+      )}
+
       <video ref={videoRef} style={arVideoStyle} />
       <canvas ref={canvasRef} style={arCanvasStyle} />
       <DebugConsole logs={logs} />
