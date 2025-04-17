@@ -225,9 +225,11 @@ function MindAR() {
    */
   const initMarker = useCallback(() => {
     const postMatrix = new THREE.Matrix4();
+
     const anchor = new THREE.Object3D();
     anchor.visible = false;
     anchor.matrixAutoUpdate = false;
+
     markerRef.current = {
       postMatrix,
       anchor,
@@ -246,34 +248,34 @@ function MindAR() {
     const [width, height] = dimensions;
     const marker = markerRef.current as ARMarker;
     const matrix = new THREE.Matrix4();
+
     const position = new THREE.Vector3(width / 2, width / 2 + (height - width) / 2);
+
     const scale = new THREE.Vector3(width, width, width);
+
     const quaternion = new THREE.Quaternion();
+
     matrix.compose(position, quaternion, scale);
+
     marker.postMatrix = matrix;
+
     addLog("Marker setup with dimensions: " + dimensions.join("x"));
   };
 
   // Update your updateWorldMatrix function to include more debugging
   const updateWorldMatrix = (worldMatrixUpdate: number[] | null) => {
-    const matrixFound = worldMatrixUpdate !== null;
-    const marker = markerRef.current as ARMarker;
-    const anchor = marker.anchor;
+    const matrixFound = worldMatrixUpdate !== null
+    const marker = markerRef.current as ARMarker
+    const anchor = marker.anchor
 
-    if (matrixFound) {
-      console.log("TARGET FOUND!", worldMatrixUpdate);
-      addLog("Target Acquired: Rendering 3D model.");
-    } else {
-      console.log("Target lost");
-      addLog("Target Lost: 3D model deactivated.");
+    // You can use callbacks here to trigger on target lost/found
+    if (anchor.visible && matrixFound) {
+      console.log('Target Found')
+    } else if (anchor.visible && !matrixFound) {
+      console.log('Target Lost')
     }
 
-    // Ensure the anchor is in the scene
-    if (!sceneRef.current?.children.includes(anchor)) {
-      console.warn("Anchor not in scene!");
-      if (sceneRef.current) sceneRef.current.add(anchor);
-    }
-
+    // This line toggles ThreeJS object visibility in the scene
     anchor.visible = matrixFound;
 
     if (matrixFound) {
@@ -282,100 +284,115 @@ function MindAR() {
       updatedMatrix.elements = worldMatrixUpdate as THREE.Matrix4Tuple;
       updatedMatrix.multiply(postMatrix);
       anchor.matrix = updatedMatrix;
-
-      // Force an update if needed
-      if (rendererRef.current) {
-        rendererRef.current.render(sceneRef.current as THREE.Scene, cameraRef.current as THREE.PerspectiveCamera);
-      }
     }
-  };
+  }
 
   /**
    * Creates a new AR Controller for MindAR.
    */
   const initController = () => {
+    // arController is type `any` here
+    // Consider making a wrapper interface 
     const arController = new window.MINDAR.IMAGE.Controller({
       inputWidth: window.innerWidth,
       inputHeight: window.innerHeight,
-      onUpdate: (data: { type: string; targetIndex: number; worldMatrix: number[] }) => {
+      onUpdate: (data: {
+        type: string,
+        targetIndex: number,
+        worldMatrix: number[]
+      }) => {
+
+        // There are a couple data `types`
+        // Check the MindAR source for more info
+        // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js
         if (data.type === 'updateMatrix') {
-          const { targetIndex, worldMatrix } = data;
-          let candidate = markerRef.current as ARMarker;
+          const { targetIndex, worldMatrix } = data
+
+          let candidate = markerRef.current as ARMarker
+
           if (candidate.targetIndex === targetIndex) {
-            candidate.updateWorldMatrix(worldMatrix);
+            candidate.updateWorldMatrix(worldMatrix)
           }
-          addLog(`Controller update: targetIndex ${targetIndex}`);
         }
-      },
-    });
-    controllerRef.current = arController;
-    addLog("Controller initialized.");
-    return arController;
-  };
+
+      }
+    })
+
+    controllerRef.current = arController
+
+    return arController
+  }
 
   /**
    * Registers marker with controller and sets dimensions.
    */
   const registerMarker = async (arController: any) => {
-    const marker = markerRef.current as ARMarker;
-    const data = await arController.addImageTargets(marker.targetSrc);
-    marker.setupMarker(data.dimensions[0]);
-    addLog("Marker registered. Dimensions: " + data.dimensions[0].join("x"));
-  };
+    const marker = markerRef.current as ARMarker
+
+    // addImageTargets returns object { dimensions, matchingDataList, trackingDataList }
+    // Check MindAR source for more info
+    // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js#L67-L104
+    const data = await arController.addImageTargets(marker.targetSrc)
+
+    // data.dimensions is an array of width, height pairs for target images.
+    // We only have one target image - index 0.
+    marker.setupMarker(data.dimensions[0])
+  }
 
   /**
    * Creates a new ThreeJS camera.
    */
   const setupCamera = (arController: any) => {
-    const camera = new THREE.PerspectiveCamera();
-    const proj = arController.getProjectionMatrix();
-    camera.fov = 2 * Math.atan(1 / proj[5]) * 180 / Math.PI;
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.near = proj[14] / (proj[10] - 1.0);
-    camera.far = proj[14] / (proj[10] + 1.0);
-    camera.updateProjectionMatrix();
-    cameraRef.current = camera;
-    addLog("Camera setup complete.");
-  };
+    const camera = new THREE.PerspectiveCamera()
+
+    const proj = arController.getProjectionMatrix()
+
+    camera.fov = 2 * Math.atan(1 / proj[5]) * 180 / Math.PI
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.near = proj[14] / (proj[10] - 1.0)
+    camera.far = proj[14] / (proj[10] + 1.0)
+    camera.updateProjectionMatrix()
+
+    cameraRef.current = camera
+  }
 
   // Update your composeScene function to create a more visible model
   const composeScene = () => {
-    const scene = new THREE.Scene();
-    const marker = markerRef.current as ARMarker;
-    const anchor = marker.anchor;
+    const scene = new THREE.Scene()
+    const marker = markerRef.current as ARMarker
+    const anchor = marker.anchor
 
-    // Create a more visible cube
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xff0000,  // Bright red
-      emissive: 0x222222, // Slight emissive glow
-      roughness: 0.5
-    });
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const cube = new THREE.Mesh(geometry, material);
+    // You can replace the next 10 lines with your own scene
+    // logic; just remember to `add` your models to the anchor and
+    // add the anchor + lighting to the scene.
+    const material = new THREE.MeshStandardMaterial({ color: 0xffffff })
+    const geometry = new THREE.BoxGeometry(1, 1, 1)
+    const cube = new THREE.Mesh(geometry, material)
 
-    // Make the cube larger
-    cube.scale.set(0.5, 0.5, 0.5);
+    const light = new THREE.DirectionalLight(0xff0000, 0.5)
+    light.rotation.x = Math.PI / 2
+    light.position.set(1, 1, 1)
 
-    // Add ambient light for better visibility
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    anchor.add(cube)
+    scene.add(anchor, light)
 
-    // Add directional light
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(1, 1, 1);
-
-    // Add everything to the scene
-    anchor.add(cube);
-    scene.add(anchor);
-    scene.add(light);
-    scene.add(ambientLight);
-
-    sceneRef.current = scene;
-    addLog("Scene composed with enhanced cube and lighting.");
-  };
+    sceneRef.current = scene
+  }
 
   /**
    * Handler to start AR process.
    */
+  const handleStartAR = async () => {
+    await startVideo();
+    startCanvas();
+    initMarker();
+    const controller = initController();
+    await registerMarker(controller);
+    setupCamera(controller);
+    composeScene();
+    await controller.dummyRun(videoRef.current!);
+    setARReady(true);
+  };
 
   useEffect(() => {
     const startAR = async () => {
@@ -404,86 +421,30 @@ function MindAR() {
     startAR()
   }, [initMarker])
 
-  // Combine all initialization steps in a single handler
-  const handleStartAR = async () => {
-    addLog("Starting AR process...");
-
-    try {
-      // Step 1: Start video and canvas
-      await startVideo();
-      startCanvas();
-
-      // Step 2: Initialize MindAR components
-      initMarker();
-      const controller = initController();
-      await registerMarker(controller);
-
-      // Step 3: Setup ThreeJS components
-      setupCamera(controller);
-      composeScene();
-
-      // Step 4: Run dummy process for GPU warmup
-      if (videoRef.current) {
-        await controller.dummyRun(videoRef.current);
-
-        // Step 5: Start animation and processing
-        controllerRef.current.processVideo(videoRef.current);
-        setARReady(true);
-
-        // Add extra logging to verify marker detection is working
-        addLog("AR is ready. Looking for markers...");
-      } else {
-        addLog("Error: Video element not found");
-      }
-    } catch (error) {
-      addLog("Error initializing AR: " + (error instanceof Error ? error.message : "Unknown error"));
-      console.error("Error initializing AR:", error);
-    }
-  };
-
   // Create a separate animation function that runs when arReady changes
   useEffect(() => {
-    if (!arReady) return;
+    if (arReady) {
+      const animateScene = () => {
+        const renderer = rendererRef.current as THREE.WebGLRenderer
+        const camera = cameraRef.current as THREE.PerspectiveCamera
+        const scene = sceneRef.current as THREE.Scene
 
-    addLog("Starting animation loop");
-
-    const animateScene = () => {
-      if (!rendererRef.current || !cameraRef.current || !sceneRef.current) {
-        console.error("Missing ThreeJS components");
-        return;
+        renderer.render(scene, camera)
+        animationFrameRef.current = window.requestAnimationFrame(() => {
+          animateScene()
+        })
       }
 
-      const renderer = rendererRef.current;
-      const camera = cameraRef.current;
-      const scene = sceneRef.current;
+      // `processVideo` detects, describes, matches, tracks features
+      // and updates worldMatrix model.
+      // See below monstrosity.
+      // https://github.com/hiukim/mind-ar-js/blob/master/src/image-target/controller.js#L134-L256
+      controllerRef.current.processVideo(videoRef.current)
 
-      // Add logging to check if animation loop is running
-      console.log("Rendering frame");
-
-      renderer.render(scene, camera);
-      animationFrameRef.current = window.requestAnimationFrame(animateScene);
-    };
-
-    animateScene();
-
-    // Cleanup function
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      // Stop video streams
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
-
-      // Cleanup controller if needed
-      if (controllerRef.current) {
-        // Add controller cleanup if the library provides one
-      }
-    };
-  }, [arReady]);
+      // Render loop
+      animateScene()
+    }
+  }, [arReady])
 
   const appStyle: CSSProperties = {
     width: "100vw",
@@ -555,14 +516,7 @@ function MindAR() {
               </select>
             </label>
           </div>
-          <button
-            onClick={() => {
-              setStartAR(true);
-              handleStartAR();
-            }}
-          >
-            Start AR
-          </button>
+          <button onClick={() => { setStartAR(true); handleStartAR(); }}>Start AR</button>
         </div>
       )}
 
