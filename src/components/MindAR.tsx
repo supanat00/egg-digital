@@ -88,13 +88,12 @@ function MindAR() {
    * Starts webcam using getUserMedia with selected camera and resolution.
    */
   const startVideo = async () => {
-    const video = videoRef.current;
-    if (!video) {
-      addLog("Missing video DOM element");
-      return;
-    }
+    const video = videoRef.current
 
-    try {
+    if (video) {
+
+      const mediaDevices = navigator.mediaDevices
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === "videoinput");
       // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
@@ -106,45 +105,27 @@ function MindAR() {
       }
       addLog("Selected camera: " + (selectedCamera.label || selectedCamera.deviceId));
 
-      try {
-        // ใช้ constraints แบบ exact หากรองรับ
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            deviceId: { ideal: selectedCamera.deviceId },
-            facingMode: { ideal: "environment" },
-            width: { ideal: selectedResolution.width },
-            height: { ideal: selectedResolution.height },
-          }
-        });
-        video.srcObject = stream;
-        addLog("Video stream started with exact constraints.");
-      } catch (error) {
-        if (error instanceof Error && error.name === "OverconstrainedError") {
-          addLog("OverconstrainedError: Falling back to ideal constraints");
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-              deviceId: { ideal: selectedCamera.deviceId },
-              facingMode: { ideal: "environment" },
-              width: { ideal: selectedResolution.width },
-              height: { ideal: selectedResolution.height }
-            }
-          });
-          video.srcObject = stream;
-          addLog("Video stream started with ideal constraints fallback.");
-        } else {
-          addLog("Error starting video: " + (error instanceof Error ? error.message : "Unknown error"));
-          console.error("Error starting video:", error);
+      const stream = await mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          deviceId: { ideal: selectedCamera.deviceId },
+          facingMode: 'environment',
+          aspectRatio: 1.777777778,
+          width: { ideal: selectedResolution.width },
+          height: { ideal: selectedResolution.height },
         }
-      }
+      })
+
+      video.srcObject = stream
       video.width = selectedResolution.width;
       video.height = selectedResolution.height;
-      video.play();
-    } catch (err) {
-      addLog("Failed to start video stream.");
+
+      video.play()
+
+    } else {
+      console.error("Missing video DOM element")
     }
-  };
+  }
 
   // const startVideo = async () => {
   //   const video = videoRef.current;
@@ -208,17 +189,18 @@ function MindAR() {
    * Starts canvas and renderer for ThreeJS.
    */
   const startCanvas = () => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
+    const canvas = canvasRef.current as HTMLCanvasElement
     const renderer = new THREE.WebGLRenderer({
       canvas,
       alpha: true,
       antialias: true
-    });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    rendererRef.current = renderer;
-    addLog("Canvas and renderer started.");
-  };
+    })
+
+    renderer.setClearColor(0x000000, 0)
+    renderer.setSize(window.innerWidth, window.innerHeight)
+
+    rendererRef.current = renderer
+  }
 
   /**
    * Initializes a single MindAR marker.
