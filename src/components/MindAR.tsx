@@ -21,7 +21,7 @@ function MindAR() {
   const [arReady, setARReady] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
-  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[0]);
+  const [selectedResolution, setSelectedResolution] = useState<ResolutionOption>(resolutionOptions[1]);
   const [startAR, setStartAR] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -98,7 +98,7 @@ function MindAR() {
       const videoDevices = devices.filter(device => device.kind === "videoinput");
       // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
       const selectedCamera =
-        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[1];
+        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
       if (!selectedCamera) {
         addLog("No video devices found");
         return;
