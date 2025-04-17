@@ -98,7 +98,7 @@ function MindAR() {
       const videoDevices = devices.filter(device => device.kind === "videoinput");
       // เลือกกล้องตามค่า selectedCameraId ถ้ามี; ถ้าไม่มีให้ใช้ตัวแรก
       const selectedCamera =
-        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[0];
+        videoDevices.find(device => device.deviceId === selectedCameraId) || videoDevices[1];
       if (!selectedCamera) {
         addLog("No video devices found");
         return;
