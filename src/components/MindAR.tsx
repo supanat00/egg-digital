@@ -14,6 +14,7 @@ const resolutionOptions: ResolutionOption[] = [
   { label: "1280x720", width: 1280, height: 720 },
   { label: "1920x1080", width: 1920, height: 1080 },
   { label: "3840x2160", width: 3840, height: 2160 },
+  { label: "default", width: window.innerWidth, height: window.innerHeight },
 ];
 
 function MindAR() {
@@ -137,8 +138,8 @@ function MindAR() {
           console.error("Error starting video:", error);
         }
       }
-      video.width = window.innerWidth
-      video.height = window.innerHeight
+      video.width = selectedResolution.width;
+      video.height = selectedResolution.height;
       video.play();
     } catch (err) {
       addLog("Failed to start video stream.");
